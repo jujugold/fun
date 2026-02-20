@@ -1,8 +1,7 @@
 import datetime as dt
-from io import StringIO
 
 import pandas as pd
-import requests
+import yfinance as yf
 
 
 def fetch_bitcoin_market_chart(vs_currency: str = "usd", days: int = 30) -> pd.DataFrame:
@@ -28,32 +27,14 @@ def fetch_bitcoin_market_chart(vs_currency: str = "usd", days: int = 30) -> pd.D
     end = dt.datetime.utcnow()
     start = end - dt.timedelta(days=days)
 
-    period1 = int(start.timestamp())
-    period2 = int(end.timestamp())
+    ticker = yf.Ticker("BTC-USD")
+    data = ticker.history(start=start, end=end, interval="1d")
 
-    url = "https://query1.finance.yahoo.com/v7/finance/download/BTC-USD"
-    params = {
-        "period1": period1,
-        "period2": period2,
-        "interval": "1d",
-        "events": "history",
-        "includeAdjustedClose": "true",
-    }
-
-    response = requests.get(url, params=params, timeout=10)
-    response.raise_for_status()
-
-    csv_text = response.text
-    if not csv_text.strip():
-        raise ValueError("No data returned from Yahoo Finance for BTC-USD.")
-
-    data = pd.read_csv(StringIO(csv_text), parse_dates=["Date"])
     if data.empty:
         raise ValueError("No data returned from Yahoo Finance for BTC-USD.")
 
-    data = data.set_index("Date")
-    data.index.name = "timestamp"
-
     df = data[["Close"]].rename(columns={"Close": "price"})
+    df.index.name = "timestamp"
+
     return df
 

@@ -25,6 +25,21 @@ def main() -> None:
         window_start = last_timestamp - pd.Timedelta(days=365 * 5)
         df = df[df.index >= window_start]
 
+    # Identify golden crosses: 50-day MA crossing above 200-day MA
+    golden_cross_mask = (
+        (df["ma_50"] > df["ma_200"])
+        & (df["ma_50"].shift(1) <= df["ma_200"].shift(1))
+    )
+    golden_cross_dates = df.index[golden_cross_mask]
+
+    # Print out golden cross dates and prices
+    if len(golden_cross_dates) > 0:
+        print("\nGolden crosses (50-day MA crossing above 200-day MA):")
+        for ts, price in df.loc[golden_cross_dates, "price"].items():
+            print(f"{ts.date()}: ${price:,.2f}")
+    else:
+        print("\nNo golden crosses found in this period.")
+
     current_row = df.iloc[-1]
     current_price = float(current_row["price"])
     current_ma_50 = float(current_row["ma_50"]) if pd.notna(current_row["ma_50"]) else None
